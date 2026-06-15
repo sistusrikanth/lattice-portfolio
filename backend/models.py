@@ -56,3 +56,23 @@ class StartupIdea(Base):
     description = Column(Text, default="")
     contact_url = Column(String(1000), default="")
     sort_order = Column(Integer, default=0)
+
+
+class DayEntry(Base):
+    __tablename__ = "day_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    entry_date = Column(String(10), unique=True, nullable=False, index=True)  # YYYY-MM-DD
+    personal = Column(Text, default="")
+    professional = Column(Text, default="")
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+
+
+class IdentityCard(Base):
+    __tablename__ = "identity_cards"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category = Column(String(50), unique=True, nullable=False, index=True)
+    content = Column(Text, default="")
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)

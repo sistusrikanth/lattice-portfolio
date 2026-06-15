@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import { clearToken, usePrivateToken } from "../lib/auth";
+import PrivateShell from "../components/PrivateShell";
 import type { Article, PhotoLink } from "../lib/types";
 import "./Admin.css";
-
-const TOKEN_KEY = "lattice_admin_token";
+import "./PrivatePages.css";
 
 export default function AdminPage() {
-  const [token, setToken] = useState(localStorage.getItem(TOKEN_KEY) || "");
-  const [password, setPassword] = useState("");
+  const token = usePrivateToken();
+  const navigate = useNavigate();
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"articles" | "photos">("articles");
   const [articles, setArticles] = useState<Article[]>([]);
@@ -42,28 +44,10 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (token) loadData(token).catch(() => {
-      localStorage.removeItem(TOKEN_KEY);
-      setToken("");
+      clearToken();
+      navigate("/admin");
     });
-  }, [token]);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    try {
-      const { access_token } = await api.login(password);
-      localStorage.setItem(TOKEN_KEY, access_token);
-      setToken(access_token);
-      setPassword("");
-    } catch {
-      setError("Invalid password");
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    setToken("");
-  };
+  }, [token, navigate]);
 
   const resetForm = () => {
     setEditing(null);
@@ -130,34 +114,17 @@ export default function AdminPage() {
     await loadData(token);
   };
 
-  if (!token) {
-    return (
-      <div className="admin-login">
-        <div className="admin-login-card card">
-          <h1 className="serif">Admin</h1>
-          <p className="admin-login-desc">Sign in to write and manage content.</p>
-          <form onSubmit={handleLogin}>
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoFocus
-            />
-            {error && <p className="admin-error">{error}</p>}
-            <button type="submit" className="btn btn-primary">Sign in</button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="admin-page">
-      <div className="admin-header">
-        <h1 className="serif">Admin panel</h1>
-        <button onClick={handleLogout} className="btn btn-outline">Sign out</button>
-      </div>
+    <PrivateShell>
+      <div className="admin-page">
+        <div className="admin-header">
+          <h1 className="serif">Admin panel</h1>
+        </div>
+
+        <div className="admin-private-links">
+          <Link to="/private/days">Day tracker</Link>
+          <Link to="/private/identity">Who I am</Link>
+        </div>
 
       <div className="admin-tabs mono">
         <button className={tab === "articles" ? "active" : ""} onClick={() => setTab("articles")}>
@@ -305,6 +272,7 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </PrivateShell>
   );
 }

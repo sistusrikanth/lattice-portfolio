@@ -1,4 +1,4 @@
-import type { Article, PhotoLink, Project, SiteConfig, StartupIdea } from "./types";
+import type { Article, DayEntry, IdentityCard, PhotoLink, Project, SiteConfig, StartupIdea } from "./types";
 
 const API = "/api";
 
@@ -73,6 +73,35 @@ export const api = {
     fetchJson<{ ok: boolean }>(`${API}/admin/photos/${id}`, {
       method: "DELETE",
       headers: authHeaders(token),
+    }),
+
+  getDayEntries: (token: string) =>
+    fetchJson<DayEntry[]>(`${API}/admin/days`, { headers: authHeaders(token) }),
+
+  getDayEntry: (token: string, date: string) =>
+    fetchJson<DayEntry>(`${API}/admin/days/${date}`, { headers: authHeaders(token) }),
+
+  saveDayEntry: (token: string, date: string, data: { personal: string; professional: string }) =>
+    fetchJson<DayEntry>(`${API}/admin/days/${date}`, {
+      method: "PUT",
+      headers: authHeaders(token),
+      body: JSON.stringify({ entry_date: date, ...data }),
+    }),
+
+  deleteDayEntry: (token: string, date: string) =>
+    fetchJson<{ ok: boolean }>(`${API}/admin/days/${date}`, {
+      method: "DELETE",
+      headers: authHeaders(token),
+    }),
+
+  getIdentityCards: (token: string) =>
+    fetchJson<IdentityCard[]>(`${API}/admin/identity`, { headers: authHeaders(token) }),
+
+  updateIdentityCard: (token: string, category: string, content: string) =>
+    fetchJson<IdentityCard>(`${API}/admin/identity/${category}`, {
+      method: "PUT",
+      headers: authHeaders(token),
+      body: JSON.stringify({ content }),
     }),
 };
 

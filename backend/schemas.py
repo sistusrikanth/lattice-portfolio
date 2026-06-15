@@ -87,3 +87,37 @@ class Token(BaseModel):
 
 class LoginRequest(BaseModel):
     password: str
+
+
+class DayEntryBase(BaseModel):
+    entry_date: str
+    personal: str = ""
+    professional: str = ""
+
+
+class DayEntryCreate(DayEntryBase):
+    pass
+
+
+class DayEntryOut(DayEntryBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class IdentityCardBase(BaseModel):
+    category: str
+    content: str = ""
+
+
+class IdentityCardUpdate(BaseModel):
+    content: str
+
+
+class IdentityCardOut(IdentityCardBase):
+    id: int
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}

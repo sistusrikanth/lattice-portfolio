@@ -50,3 +50,19 @@ export interface StartupIdea {
   contact_url: string;
   sort_order: number;
 }
+
+export interface DayEntry {
+  id: number;
+  entry_date: string;
+  personal: string;
+  professional: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IdentityCard {
+  id: number;
+  category: string;
+  content: string;
+  updated_at: string;
+}

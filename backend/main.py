@@ -12,11 +12,15 @@ from sqlalchemy.orm import Session
 
 from auth import create_access_token, require_admin, verify_password
 from database import Base, SessionLocal, engine, get_db
-from models import Article, PhotoLink, Project, StartupIdea
+from models import Article, DayEntry, IdentityCard, PhotoLink, Project, StartupIdea
 from schemas import (
     ArticleCreate,
     ArticleOut,
     ArticleUpdate,
+    DayEntryCreate,
+    DayEntryOut,
+    IdentityCardOut,
+    IdentityCardUpdate,
     LoginRequest,
     PhotoLinkCreate,
     PhotoLinkOut,
@@ -157,12 +161,30 @@ Quadratic memory in sequence length. At 8k tokens you're fine. At 128k you need 
     db.commit()
 
 
+def _seed_identity(db: Session):
+    if db.query(IdentityCard).count() > 0:
+        return
+    identity_seed = [
+        ("who_i_am", "I break complex systems down to their essence. Reader, builder, photographer — based in Lisbon."),
+        ("what_i_do", "I read research papers and rebuild them from first principles. I design ML systems in the open. I shoot cities and light between commits."),
+        ("what_i_care_about", "Clarity over cleverness. Systems that survive failure. Ideas that outlive the hype cycle. Showing up every day."),
+        ("writing", "Research papers, taken apart and rebuilt from their core components — the wiring made visible."),
+        ("systems", "The ML systems everyone leans on, drawn out from first principles — trade-offs left in."),
+        ("photography", "A working portfolio. Film when there's time, digital when there isn't."),
+        ("projects", "Things I'm building and startup ideas I can't stop thinking about."),
+    ]
+    for category, content in identity_seed:
+        db.add(IdentityCard(category=category, content=content))
+    db.commit()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         seed_data(db)
+        _seed_identity(db)
     finally:
         db.close()
     yield
@@ -301,6 +323,87 @@ def list_projects(db: Session = Depends(get_db)):
 @app.get("/api/ideas", response_model=list[StartupIdeaOut])
 def list_ideas(db: Session = Depends(get_db)):
     return db.query(StartupIdea).order_by(StartupIdea.sort_order).all()
+
+
+# --- Private: day tracker (admin only) ---
+
+@app.get("/api/admin/days", response_model=list[DayEntryOut])
+def list_day_entries(
+    limit: int = Query(60, le=365),
+    _: bool = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return db.query(DayEntry).order_by(DayEntry.entry_date.desc()).limit(limit).all()
+
+
+@app.get("/api/admin/days/{entry_date}", response_model=DayEntryOut)
+def get_day_entry(entry_date: str, _: bool = Depends(require_admin), db: Session = Depends(get_db)):
+    entry = db.query(DayEntry).filter(DayEntry.entry_date == entry_date).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return entry
+
+
+@app.put("/api/admin/days/{entry_date}", response_model=DayEntryOut)
+def upsert_day_entry(
+    entry_date: str,
+    body: DayEntryCreate,
+    _: bool = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    entry = db.query(DayEntry).filter(DayEntry.entry_date == entry_date).first()
+    if entry:
+        entry.personal = body.personal
+        entry.professional = body.professional
+    else:
+        entry = DayEntry(entry_date=entry_date, personal=body.personal, professional=body.professional)
+        db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+@app.delete("/api/admin/days/{entry_date}")
+def delete_day_entry(entry_date: str, _: bool = Depends(require_admin), db: Session = Depends(get_db)):
+    entry = db.query(DayEntry).filter(DayEntry.entry_date == entry_date).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    db.delete(entry)
+    db.commit()
+    return {"ok": True}
+
+
+# --- Private: identity cards (admin only) ---
+
+IDENTITY_ORDER = [
+    "who_i_am", "what_i_do", "what_i_care_about",
+    "writing", "systems", "photography", "projects",
+]
+
+
+@app.get("/api/admin/identity", response_model=list[IdentityCardOut])
+def list_identity_cards(_: bool = Depends(require_admin), db: Session = Depends(get_db)):
+    cards = db.query(IdentityCard).all()
+    order = {cat: i for i, cat in enumerate(IDENTITY_ORDER)}
+    return sorted(cards, key=lambda c: order.get(c.category, 99))
+
+
+@app.put("/api/admin/identity/{category}", response_model=IdentityCardOut)
+def update_identity_card(
+    category: str,
+    body: IdentityCardUpdate,
+    _: bool = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    card = db.query(IdentityCard).filter(IdentityCard.category == category).first()
+    if not card:
+        card = IdentityCard(category=category, content=body.content)
+        db.add(card)
+    else:
+        card.content = body.content
+    db.commit()
+    db.refresh(card)
+    return card
 
 
 # --- Site config ---
