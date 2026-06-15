@@ -38,11 +38,14 @@ Default admin password: `admin123` (change via `ADMIN_PASSWORD` in `.env`)
 
 ## Admin panel
 
-Go to `/admin` to:
+Go to `/admin` to sign in and:
 
 - **Write articles** in Markdown (papers, systems, notes)
 - **Add Instagram photo links** with categories (street, landscape, architecture, portrait)
-- Edit, publish/unpublish, and delete content
+- **Day tracker** at `/private/days` — log personal and professional accomplishments each day
+- **Who I am** at `/private/identity` — a few lines per category reminding you who you are and the face of each site section
+
+Private pages use the same admin password and are not linked from the public navigation.
 
 Articles are stored in SQLite at `data/site.db`.
 
