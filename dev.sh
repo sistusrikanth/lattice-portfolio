@@ -20,5 +20,5 @@ pip install -q -r requirements.txt
 
 echo "→ Starting server on http://localhost:8080"
 echo "  Admin: http://localhost:8080/admin (password: admin123)"
-cd "$ROOT"
-DATA_DIR="$ROOT/data" uvicorn backend.main:app --reload --port 8080
+cd "$ROOT/backend"
+DATA_DIR="$ROOT/data" uvicorn main:app --reload --port 8080
